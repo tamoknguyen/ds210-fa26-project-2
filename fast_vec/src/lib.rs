@@ -75,16 +75,42 @@ impl<T> FastVec<T> {
 
     // Use the project handout as a guide for this part!
     pub fn get(&self, i: usize) -> &T {
-        todo!("implement get!");
+    if i >= self.len {
+        panic!("FastVec: get out of bounds");
     }
 
-    pub fn push(&mut self, t: T) {
-        if self.len == self.capacity {
-            todo!("implement growing the vector, using self.growth to pick the new capacity!");
-        } else {
-            todo!("implement pushing t directly since the vector still has capacity!");
-        }
+    unsafe {
+        &*self.ptr_to_data.add(i)
     }
+}
+
+    pub fn push(&mut self, t: T) {
+    if self.len == self.capacity {
+        let new_capacity = self.growth.next_capacity(self.capacity);
+
+        let new_ptr = unsafe {
+            MALLOC.malloc(size_of::<T>() * new_capacity) as *mut T
+        };
+
+        unsafe {
+            for i in 0..self.len {
+                let element = ptr::read(self.ptr_to_data.add(i));
+                ptr::write(new_ptr.add(i), element);
+            }
+
+            MALLOC.free(self.ptr_to_data as *mut u8);
+        }
+
+        self.ptr_to_data = new_ptr;
+        self.capacity = new_capacity;
+    }
+
+    unsafe {
+        ptr::write(self.ptr_to_data.add(self.len), t);
+    }
+
+    self.len += 1;
+}
 
     pub fn remove(&mut self, i: usize) {
         todo!("implement remove");
