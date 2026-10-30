@@ -1,11 +1,8 @@
+
 // Times your vectors and draws two plots, benchmark_slow.png and benchmark_growth.png.
 //
-// Run it in release mode, or it will take far longer and the numbers will mislead you:
-//
-//     cargo run --release --bin benchmark
-//
-// main() is yours to change: it picks what gets compared. The plotting code below
-// it you can leave alone.
+// Run in release mode:
+// cargo run --release --bin benchmark
 
 use fast_vec::timing::{time_fast_pushes, time_slow_pushes};
 use fast_vec::{FastVec, Growth};
@@ -14,25 +11,63 @@ use plotters::prelude::*;
 use plotters::style::full_palette::{GREEN, ORANGE, PURPLE};
 
 fn main() {
-    // Plot 1: SlowVec against FastVec. SlowVec is slow enough that a small n
-    // is all it can manage.
+    // Plot 1: SlowVec against FastVec.
     let n = 5_000;
     let every = 100;
+
     let slow = time_slow_pushes(n, every);
     let fast = time_fast_pushes(FastVec::new(), n, every);
+
     plot(
         "benchmark_slow.png",
         "SlowVec vs FastVec",
-        vec![("SlowVec", slow), ("FastVec, Double", fast)],
+        vec![
+            ("SlowVec", slow),
+            ("FastVec, Double", fast),
+        ],
     );
 
-    // Plot 2: growth strategies against each other, at a much bigger n.
-    // Which strategies, and which knob settings, is your choice. Up to four.
+    // Plot 2: Compare different multiplication growth strategies.
     let n = 1_000_000;
     let every = 10_000;
+
     let mut series = Vec::new();
-    series.push(("Double", time_fast_pushes(FastVec::with_growth(Growth::Double), n, every)));
-    // YOUR CHOICES GO HERE.
+
+    series.push((
+        "Double",
+        time_fast_pushes(
+            FastVec::with_growth(Growth::Double),
+            n,
+            every,
+        ),
+    ));
+
+    series.push((
+        "Multiply(1.5)",
+        time_fast_pushes(
+            FastVec::with_growth(Growth::Multiply(1.5)),
+            n,
+            every,
+        ),
+    ));
+
+    series.push((
+        "Multiply(2.5)",
+        time_fast_pushes(
+            FastVec::with_growth(Growth::Multiply(2.5)),
+            n,
+            every,
+        ),
+    ));
+
+    series.push((
+        "Multiply(3.0)",
+        time_fast_pushes(
+            FastVec::with_growth(Growth::Multiply(3.0)),
+            n,
+            every,
+        ),
+    ));
 
     plot("benchmark_growth.png", "Growth strategies", series);
 }
@@ -44,6 +79,7 @@ fn main() {
 fn plot(filename: &str, title: &str, series: Vec<(&str, Vec<(usize, f64)>)>) {
     let mut max_x = 1.0f32;
     let mut max_y = 1.0f32;
+
     for (_, points) in &series {
         for (x, y) in points {
             max_x = max_x.max(*x as f32);
@@ -59,7 +95,11 @@ fn plot(filename: &str, title: &str, series: Vec<(&str, Vec<(usize, f64)>)>) {
         .caption(title, ("sans-serif", 30).into_font())
         .x_label_area_size(50)
         .y_label_area_size(80)
-        .build_cartesian_2d(0f32..max_x * 1.05, 0f32..max_y * 1.1).unwrap();
+        .build_cartesian_2d(
+            0f32..max_x * 1.05,
+            0f32..max_y * 1.1,
+        )
+        .unwrap();
 
     chart
         .configure_mesh()
@@ -69,18 +109,37 @@ fn plot(filename: &str, title: &str, series: Vec<(&str, Vec<(usize, f64)>)>) {
         .y_labels(10)
         .x_label_formatter(&|x| format!("{}", *x as u64))
         .label_style(("sans-serif", 18))
-        .draw().unwrap();
+        .draw()
+        .unwrap();
 
     let colors = [BLUE, ORANGE, GREEN, PURPLE];
+
     for (i, (name, points)) in series.into_iter().enumerate() {
-        let style = ShapeStyle::from(&colors[i % colors.len()]).stroke_width(2).filled();
-        let points: Vec<(f32, f32)> = points.iter().map(|(x, y)| (*x as f32, *y as f32)).collect();
-        chart.draw_series(LineSeries::new(points, style.clone()).point_size(2)).unwrap()
+        let style = ShapeStyle::from(&colors[i % colors.len()])
+            .stroke_width(2)
+            .filled();
+
+        let points: Vec<(f32, f32)> = points
+            .iter()
+            .map(|(x, y)| (*x as f32, *y as f32))
+            .collect();
+
+        chart
+            .draw_series(
+                LineSeries::new(points, style.clone()).point_size(2)
+            )
+            .unwrap()
             .label(name)
-            .legend(move |(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], style));
+            .legend(move |(x, y)| {
+                PathElement::new(
+                    vec![(x, y), (x + 20, y)],
+                    style,
+                )
+            });
     }
 
-    chart.configure_series_labels()
+    chart
+        .configure_series_labels()
         .position(SeriesLabelPosition::UpperLeft)
         .border_style(&BLACK)
         .label_font(("sans-serif", 20))
@@ -89,5 +148,6 @@ fn plot(filename: &str, title: &str, series: Vec<(&str, Vec<(usize, f64)>)>) {
         .unwrap();
 
     root.present().unwrap();
+
     println!("Wrote {}", filename);
 }
