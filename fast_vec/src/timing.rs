@@ -9,9 +9,6 @@
 // the last at 100. If n is not a multiple of every, the leftover pushes at the end
 // still happen but produce no sample: n = 105 gives the same 10 samples. The times
 // only ever go up, because each one is measured from the same starting point.
-//
-// std::time::Instant is the stopwatch. `Instant::now()` starts it, and
-// `start.elapsed().as_secs_f64() * 1000.0` reads it in milliseconds.
 
 use std::time::Instant;
 
@@ -19,10 +16,42 @@ use slow_vec::SlowVec;
 
 use crate::FastVec;
 
-pub fn time_fast_pushes(mut fast_vec: FastVec<u64>, n: usize, every: usize) -> Vec<(usize, f64)> {
-    todo!("time_fast_pushes")
+pub fn time_fast_pushes(
+    mut fast_vec: FastVec<u64>,
+    n: usize,
+    every: usize,
+) -> Vec<(usize, f64)> {
+    let mut samples = Vec::new();
+    let start = Instant::now();
+
+    for i in 0..n {
+        fast_vec.push(i as u64);
+
+        if every > 0 && (i + 1) % every == 0 {
+            let elapsed_ms = start.elapsed().as_secs_f64() * 1000.0;
+            samples.push((i + 1, elapsed_ms));
+        }
+    }
+
+    samples
 }
 
-pub fn time_slow_pushes(n: usize, every: usize) -> Vec<(usize, f64)> {
-    todo!("time_slow_pushes")
+pub fn time_slow_pushes(
+    n: usize,
+    every: usize,
+) -> Vec<(usize, f64)> {
+    let mut slow_vec = SlowVec::new();
+    let mut samples = Vec::new();
+    let start = Instant::now();
+
+    for i in 0..n {
+        slow_vec.push(i as u64);
+
+        if every > 0 && (i + 1) % every == 0 {
+            let elapsed_ms = start.elapsed().as_secs_f64() * 1000.0;
+            samples.push((i + 1, elapsed_ms));
+        }
+    }
+
+    samples
 }
