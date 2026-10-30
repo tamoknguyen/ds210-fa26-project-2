@@ -64,17 +64,25 @@ Remember, the `--release` matters: without it the timings are slow and misleadin
 Answer the questions from the project handout here, under the headings below. Leave the headings where they are, and leave everything above this line alone. Answers should be about 2-3 sentences per question unless the handout says otherwise.
 
 ### 1. SlowVec against FastVec
+Looking at my graph, SlowVec gets slower pretty quickly as more elements are added, while FastVec stays almost flat. At 5,000 elements, SlowVec took around 700 ms, while FastVec was barely visible on the graph. This is because SlowVec has to move all the previous elements every time it pushes, so the total work is 1 + 2 + ... + n = n(n+1)/2, which is O(n²).
 
 ### 2. Why push is fast on average
+For 16 pushes, Double takes 31 steps total: 16 for adding the elements and 15 for moving elements during resizing (1 + 2 + 4 + 8). Even though some pushes take longer because the vector has to resize, it doesn't happen that often since the capacity doubles each time. So overall, the average amount of work per push stays about the same, which is O(1).
 
 ### 3. Your growth experiments
+I tried Multiply(1.5), Multiply(2.5), and Multiply(3.0) on growth-multiply, and Add(100), Add(10000), and Add(100000) on growth-add. From my graphs, Multiply(3.0) was the fastest in the first experiment at around 1.94 ms, while Add(100) was really slow at around 1,320 ms. I decided to merge growth-multiply because it showed the differences better, but I also noticed that bigger growth factors leave more unused space. For example, multiplying by 3 leaves about two-thirds of the space empty right after resizing, while doubling leaves about half.
 
 ### 4. Why `Add` eventually loses
+Add(k) only adds the same number of slots every time, so when the vector gets bigger, it still has to resize pretty often and move more and more elements. Using a bigger k makes it faster because it doesn't resize as much, but it doesn't really fix the problem as n keeps growing. That's why Add(k) is still O(n²) overall, while Double is O(n).
 
 ### 5. Two kinds of leak
+Tracker checks if the elements themselves are getting dropped, while MALLOC checks if the memory used by the vector is actually freed. For example, if Drop only freed the memory without dropping the elements, MALLOC would say everything is fine, but Tracker would catch the missing drops. It could also happen the other way around if the elements were dropped but the memory block wasn't freed.
 
 ### 6. The bug in `clear`
+The problem with clear was that it freed the memory but forgot to drop the elements inside first. I fixed it by using ptr::drop_in_place on each element before freeing the memory. SlowVec didn't have this problem because Rust automatically handles dropping the elements in FixedSizeArray.
 
 ### 7. Something that failed at first, and how you adapted
+One thing I messed up at first was cloning the professor's GitHub repository instead of making my own copy. When I tried pushing my code, I got a permission error and realized I was working with the wrong repository. I ended up creating my own private repo and starting again, which helped me understand the Git branch process better. I also had some syntax errors with missing brackets that I fixed by checking the errors in VS Code
 
 ### AI citation
+I used ChatGPT to help me write and debug some of the Rust functions, especially the pointer and memory management parts. I also used it when I got stuck with Git commands, setting up branches, and understanding the benchmark graphs
