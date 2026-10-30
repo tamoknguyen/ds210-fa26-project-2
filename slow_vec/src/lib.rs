@@ -59,18 +59,40 @@ impl<T> SlowVec<T> {
     }
 
     pub fn push(&mut self, t: T) {
-        todo!()
+        let n = self.len();
+        let mut tmp = FixedSizeArray::allocate(n + 1);
+
+        for i in 0..n {
+            tmp.put(self.fixed.move_out(i), i);
+        }
+
+        tmp.put(t, n);
+        self.fixed = tmp;
     }
 
     pub fn remove(&mut self, i: usize) {
-        todo!()
-    }
-}
+        let n = self.len();
+        assert!(i < n, "index out of bounds");
 
+        let mut tmp = FixedSizeArray::allocate(n - 1);
+
+        for j in 0..i {
+            tmp.put(self.fixed.move_out(j), j);
+        }
+
+        self.fixed.move_out(i);
+
+        for j in (i + 1)..n {
+            tmp.put(self.fixed.move_out(j), j - 1);
+        }
+
+        self.fixed = tmp;
+    } 
+}   
 
 // This allows us to print the SlowVec using println!().
 impl<T: Display> Display for SlowVec<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "SlowVec({})", self.fixed)
+        return write!(f, "SlowVec({})", self.fixed)
     }
 }
